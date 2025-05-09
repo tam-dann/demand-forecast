@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -22,7 +23,6 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
 
 # IDE
@@ -31,8 +31,12 @@ ENV/
 *.swp
 *.swo
 
+# Streamlit
+.streamlit/secrets.toml
+
 # Project specific
-uploads/
+uploads/*
+!uploads/.gitkeep
 *.log
 settings.json
 .env
