@@ -1,7 +1,12 @@
-setuptools>=68.0.0
-flask>=2.0.1
-pandas>=2.0.0
-plotly>=5.3.1
-numpy>=1.24.0
-openpyxl>=3.0.9  # for Excel file support
-streamlit>=1.32.0  # for Streamlit app 
+setuptools==68.0.0
+flask==2.0.1
+pandas==2.0.0
+plotly==5.3.1
+numpy==1.24.0
+openpyxl==3.0.9
+streamlit==1.32.0
+scipy==1.10.0
+werkzeug==2.0.1
+python-dateutil==2.8.2
+pytz==2023.3
+six==1.16.0 
