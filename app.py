@@ -89,10 +89,57 @@ def main():
         layout="wide"
     )
     
-    st.title("Time Series Forecasting")
+    # Custom blue theme using markdown and CSS
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background-color: #eaf1fb;
+        }
+        .css-18e3th9 {
+            background-color: #eaf1fb;
+        }
+        .css-1d391kg, .css-1v0mbdj, .css-1cpxqw2 {
+            background-color: #1565c0 !important;
+            color: white !important;
+        }
+        .st-bb, .st-c6, .st-cg, .st-cj, .st-cl, .st-cm, .st-cn, .st-co, .st-cp, .st-cq, .st-cr, .st-cs, .st-ct, .st-cu, .st-cv, .st-cw, .st-cx, .st-cy, .st-cz {
+            color: #1565c0 !important;
+        }
+        .stButton>button {
+            background-color: #1976d2;
+            color: white;
+            border-radius: 5px;
+            border: none;
+        }
+        .stButton>button:hover {
+            background-color: #1565c0;
+            color: white;
+        }
+        .stDownloadButton>button {
+            background-color: #1976d2;
+            color: white;
+            border-radius: 5px;
+            border: none;
+        }
+        .stDownloadButton>button:hover {
+            background-color: #1565c0;
+            color: white;
+        }
+        .stMetric {
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("<h1 style='color:#1565c0;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
     
     # Sidebar for settings
-    st.sidebar.header("Settings")
+    st.sidebar.header("<span style='color:#1565c0;'>Settings</span>", unsafe_allow_html=True)
     settings = load_settings()
     
     # Settings controls
@@ -123,11 +170,7 @@ def main():
         index=['additive', 'multiplicative'].index(settings['seasonality'])
     )
     
-    theme = st.sidebar.selectbox(
-        "Theme",
-        options=['light', 'dark'],
-        index=['light', 'dark'].index(settings['theme'])
-    )
+    theme = 'plotly_white'  # Use white for best blue contrast
     
     show_confidence = st.sidebar.checkbox(
         "Show Confidence Intervals",
@@ -150,7 +193,7 @@ def main():
         'confidence_interval': confidence_interval,
         'model_type': model_type,
         'seasonality': seasonality,
-        'theme': theme,
+        'theme': 'light',
         'chart_style': settings['chart_style'],
         'show_confidence': show_confidence,
         'show_legend': show_legend,
@@ -200,7 +243,7 @@ def main():
                 x=df['date'],
                 y=df['value'],
                 name='Historical',
-                line=dict(color='blue')
+                line=dict(color='#1976d2')
             ))
             
             # Add forecast
@@ -208,7 +251,7 @@ def main():
                 x=forecast_results['date'],
                 y=forecast_results['forecast'],
                 name='Forecast',
-                line=dict(color='red')
+                line=dict(color='#42a5f5')
             ))
             
             # Add confidence intervals
@@ -218,7 +261,7 @@ def main():
                     y=forecast_results['upper_bound'],
                     fill=None,
                     mode='lines',
-                    line_color='rgba(255,0,0,0.2)',
+                    line_color='rgba(33,150,243,0.2)',
                     name='Upper Bound'
                 ))
                 fig.add_trace(go.Scatter(
@@ -226,24 +269,25 @@ def main():
                     y=forecast_results['lower_bound'],
                     fill='tonexty',
                     mode='lines',
-                    line_color='rgba(255,0,0,0.2)',
+                    line_color='rgba(33,150,243,0.2)',
                     name='Lower Bound'
                 ))
             
             # Update layout
             fig.update_layout(
-                title='Time Series Forecast',
+                title='<b style="color:#1565c0;">Time Series Forecast</b>',
                 xaxis_title='Date',
                 yaxis_title='Value',
                 showlegend=show_legend,
                 template=theme,
-                plot_bgcolor='white' if theme == 'light' else 'black',
-                paper_bgcolor='white' if theme == 'light' else 'black'
+                plot_bgcolor='#eaf1fb',
+                paper_bgcolor='#eaf1fb',
+                font=dict(color='#1565c0')
             )
             
             if show_grid:
-                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
-                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
+                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#bbdefb')
+                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#bbdefb')
             
             # Display plot
             st.plotly_chart(fig, use_container_width=True)
