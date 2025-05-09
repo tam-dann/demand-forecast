@@ -1,6 +1,10 @@
 # forecast.py
 import numpy as np
 from collections import Counter
+import pandas as pd
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+from statsmodels.tsa.api import SimpleExpSmoothing, Holt
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 
 class Observation:
     def __init__(self, period, demand):
@@ -330,3 +334,80 @@ class LinearForecast:
         except Exception as e:
             print(f"Error calculating MAE: {str(e)}")
             return 0
+
+class Forecast:
+    def __init__(self, df, date_col, value_col):
+        self.df = df
+        self.date_col = date_col
+        self.value_col = value_col
+        self.model = None
+        self.forecast_results = None
+        
+    def generate_forecast(self, periods=12, seasonality='additive', confidence_level=0.95, model_type='auto'):
+        try:
+            # Prepare data
+            y = self.df[self.value_col].values
+            
+            # Select model based on type
+            if model_type == 'auto':
+                # Try different models and select the best one
+                models = {
+                    'simple': SimpleExpSmoothing(y).fit(),
+                    'holt': Holt(y).fit(),
+                    'holt-winters': ExponentialSmoothing(y, seasonal_periods=12, trend='add', seasonal=seasonality).fit()
+                }
+                
+                # Calculate AIC for each model
+                aic_scores = {name: model.aic for name, model in models.items()}
+                best_model = min(aic_scores.items(), key=lambda x: x[1])[0]
+                self.model = models[best_model]
+            else:
+                if model_type == 'simple':
+                    self.model = SimpleExpSmoothing(y).fit()
+                elif model_type == 'holt':
+                    self.model = Holt(y).fit()
+                elif model_type == 'holt-winters':
+                    self.model = ExponentialSmoothing(y, seasonal_periods=12, trend='add', seasonal=seasonality).fit()
+                else:
+                    raise ValueError(f"Unknown model type: {model_type}")
+            
+            # Generate forecast
+            forecast = self.model.forecast(periods)
+            conf_int = self.model.get_prediction(start=len(y), end=len(y)+periods-1).conf_int(alpha=1-confidence_level)
+            
+            # Create forecast dataframe
+            last_date = self.df[self.date_col].iloc[-1]
+            forecast_dates = pd.date_range(start=last_date, periods=periods+1, freq='M')[1:]
+            
+            self.forecast_results = pd.DataFrame({
+                'date': forecast_dates,
+                'forecast': forecast,
+                'lower_bound': conf_int[:, 0],
+                'upper_bound': conf_int[:, 1]
+            })
+            
+            return self.forecast_results
+            
+        except Exception as e:
+            raise Exception(f"Error generating forecast: {str(e)}")
+    
+    def calculate_rmse(self):
+        if self.forecast_results is None:
+            return None
+        y_true = self.df[self.value_col].values[-len(self.forecast_results):]
+        y_pred = self.forecast_results['forecast'].values
+        return np.sqrt(mean_squared_error(y_true, y_pred))
+    
+    def calculate_mae(self):
+        if self.forecast_results is None:
+            return None
+        y_true = self.df[self.value_col].values[-len(self.forecast_results):]
+        y_pred = self.forecast_results['forecast'].values
+        return mean_absolute_error(y_true, y_pred)
+    
+    def calculate_mape(self):
+        if self.forecast_results is None:
+            return None
+        y_true = self.df[self.value_col].values[-len(self.forecast_results):]
+        y_pred = self.forecast_results['forecast'].values
+        return mean_absolute_percentage_error(y_true, y_pred)
