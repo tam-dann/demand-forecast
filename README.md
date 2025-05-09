@@ -15,8 +15,8 @@ A powerful demand forecasting application built with Python, offering both Flask
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/forecast-pro.git
-cd forecast-pro
+git clone https://github.com/yourusername/forecast.git
+cd forecast
 ```
 
 2. Install dependencies:
@@ -41,7 +41,7 @@ Access the application at: http://localhost:8501
 ## Project Structure
 
 ```
-forecast-pro/
+forecast/
 ├── app.py                 # Flask application
 ├── app_streamlit.py       # Streamlit application
 ├── forecast.py            # Forecasting models
@@ -77,4 +77,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Built with Flask and Streamlit
 - Uses Plotly for visualizations
-- Pandas for data manipulation 
+- Pandas for data manipulation
+
+## Deployment on Streamlit Cloud
+
+1. Push these changes to your GitHub repository:
+```bash
+git add .
+git commit -m "Update dependencies for Python 3.12 compatibility"
+git push
+```
+
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Sign in with your GitHub account
+4. Click "New app"
+5. Select your repository, branch, and main file (app_streamlit.py)
+6. Click "Deploy"
