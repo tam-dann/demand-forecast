@@ -1,4 +1,4 @@
-# Forecast
+# Forecast Pro
 
 A powerful demand forecasting application built with Python, offering both Flask and Streamlit interfaces.
 
