@@ -12,17 +12,24 @@ st.set_page_config(
 
 st.title("📊 Time Series Forecasting App")
 
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+# --- SIDEBAR CONTROLS ---
+st.sidebar.header("Settings")
+uploaded_file = st.sidebar.file_uploader("Upload your data file", type=["csv", "xlsx", "xls"])
+forecast_period = st.sidebar.slider("Forecast steps", min_value=1, max_value=30, value=7)
+
+data = None
 if uploaded_file is not None:
-    data = pd.read_csv(uploaded_file)
+    if uploaded_file.name.endswith(".csv"):
+        data = pd.read_csv(uploaded_file)
+    else:
+        data = pd.read_excel(uploaded_file)
     st.subheader("Uploaded Data")
     st.dataframe(data, height=250)
 
-    time_column = st.selectbox("Select time column", data.columns)
-    value_column = st.selectbox("Select value column", data.columns)
-    forecast_period = st.slider("Forecast steps", min_value=1, max_value=30, value=7)
+    time_column = st.sidebar.selectbox("Select time column", data.columns)
+    value_column = st.sidebar.selectbox("Select value column", data.columns)
 
-    if st.button("Forecast"):
+    if st.sidebar.button("Forecast"):
         try:
             if time_column == value_column:
                 st.error("Please select different columns for time and value.")
@@ -37,7 +44,6 @@ if uploaded_file is not None:
 
                 last_date = df.index[-1]
                 future_dates = pd.date_range(start=last_date + datetime.timedelta(days=1), periods=forecast_period)
-
                 forecast_df = pd.DataFrame({value_column: forecast}, index=future_dates)
 
                 fig = go.Figure()
@@ -59,12 +65,16 @@ if uploaded_file is not None:
                     pred_values = forecast[:len(true_values)]
                     rmse = np.sqrt(mean_squared_error(true_values, pred_values))
                     mae = mean_absolute_error(true_values, pred_values)
-                    mape = np.mean(np.abs((true_values - pred_values) / true_values)) * 100
+                    mask = true_values != 0
+                    if np.any(mask):
+                        mape = np.mean(np.abs((true_values[mask] - pred_values[mask]) / true_values[mask])) * 100
+                    else:
+                        mape = float('nan')
                     st.markdown("### Model Evaluation")
                     col1, col2, col3 = st.columns(3)
                     col1.metric("RMSE", f"{rmse:.2f}")
                     col2.metric("MAE", f"{mae:.2f}")
-                    col3.metric("MAPE", f"{mape:.2f}%")
+                    col3.metric("MAPE", f"{mape:.2f}%" if not np.isnan(mape) else "N/A")
 
                 forecast_df_reset = forecast_df.reset_index()
                 forecast_df_reset.columns = ['Date', 'Forecast Value']
@@ -73,4 +83,4 @@ if uploaded_file is not None:
         except Exception as e:
             st.error(f"An error occurred: {e}")
 else:
-    st.info("Please upload a CSV file with time series data to start forecasting.")
+    st.info("Please upload a CSV or Excel file with time series data to start forecasting.")
