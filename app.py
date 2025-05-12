@@ -105,7 +105,7 @@ def main():
             margin-bottom: 10px;
         }
         .stButton>button, .stDownloadButton>button {
-            background: linear-gradient(90deg, #1976d2 0%, #43e97b 100%);
+            background: #1976d2;
             color: #fff;
             border: none;
             border-radius: 6px;
@@ -114,7 +114,7 @@ def main():
             box-shadow: 0 2px 8px rgba(25,118,210,0.08);
         }
         .stButton>button:hover, .stDownloadButton>button:hover {
-            background: linear-gradient(90deg, #43e97b 0%, #1976d2 100%);
+            background: #1251a3;
             color: #fff;
         }
         .sidebar .sidebar-content {
@@ -142,7 +142,7 @@ def main():
         """,
         unsafe_allow_html=True
     )
-    st.markdown("<h1 style='color:#1976d2; font-weight:700; letter-spacing:1px;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#444; font-weight:700; letter-spacing:1px;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='color:#1976d2;'>Settings</h2>", unsafe_allow_html=True)
     settings = load_settings()
     
