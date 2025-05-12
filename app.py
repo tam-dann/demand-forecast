@@ -1,316 +1,155 @@
 import streamlit as st
-import plotly.express as px
-import plotly.graph_objects as go
 import pandas as pd
-import numpy as np
-from forecast import (
-    Observation,
-    NaiveForecast,
-    SimpleAvgForecast,
-    MovingAvgForecast,
-    WeightedMovingAvgForecast,
-    ExponentialSmoothingForecast,
-    LinearForecast,
-    Forecast
+import plotly.graph_objs as go
+from statsmodels.tsa.arima.model import ARIMA
+import datetime
+
+# ==== SETUP CONFIG + THEME ====
+st.set_page_config(
+    page_title="⏱️ Time Series Forecasting",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
-from scipy import stats
-from collections import Counter
-from datetime import datetime
-import json
-import os
 
-# Set up logging
-import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-# Global settings
-DEFAULT_SETTINGS = {
-    'forecast_horizon': 12,
-    'confidence_interval': 0.95,
-    'model_type': 'auto',
-    'seasonality': 'additive',
-    'theme': 'light',
-    'chart_style': 'default',
-    'show_confidence': True,
-    'show_legend': True,
-    'show_grid': True
-}
-
-def load_settings():
-    """Load settings from JSON file"""
-    try:
-        if os.path.exists('settings.json'):
-            with open('settings.json', 'r') as f:
-                return json.load(f)
-    except Exception as e:
-        logger.error(f"Error loading settings: {str(e)}")
-    return DEFAULT_SETTINGS.copy()
-
-def save_settings(settings):
-    """Save settings to JSON file"""
-    try:
-        with open('settings.json', 'w') as f:
-            json.dump(settings, f, indent=4)
-    except Exception as e:
-        logger.error(f"Error saving settings: {str(e)}")
-        raise
-
-def process_excel_data(df):
-    """Process Excel data and return DataFrame"""
-    try:
-        if df is None or df.empty:
-            raise ValueError("Empty or invalid Excel data")
-            
-        # Clean column names
-        df.columns = [str(col).strip().lower() for col in df.columns]
-        logger.debug(f"Cleaned columns: {df.columns.tolist()}")
-        
-        # Ensure we have date and value columns
-        if 'date' not in df.columns or 'value' not in df.columns:
-            raise ValueError("Excel file must contain 'date' and 'value' columns")
-            
-        # Convert date column to datetime
-        df['date'] = pd.to_datetime(df['date'])
-        
-        # Sort by date
-        df = df.sort_values('date')
-        
-        return df
-        
-    except Exception as e:
-        logger.error(f"Error processing Excel data: {str(e)}")
-        raise ValueError(f"Invalid Excel format: {str(e)}")
-
-def main():
-    st.set_page_config(
-        page_title="Time Series Forecasting",
-        page_icon="📈",
-        layout="wide"
-    )
-    
-    # Modern, clean, colorful interface
-    st.markdown(
-        """
-        <style>
-        html, body, .stApp {
-            background-color: #fff !important;
-            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
-        }
-        .stMetric {
-            background: #f8fafc;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .stButton>button, .stDownloadButton>button {
-            background: linear-gradient(90deg, #1976d2 0%, #43e97b 100%);
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            padding: 0.5em 1.2em;
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(25,118,210,0.08);
-        }
-        .stButton>button:hover, .stDownloadButton>button:hover {
-            background: linear-gradient(90deg, #43e97b 0%, #1976d2 100%);
-            color: #fff;
-        }
-        .sidebar .sidebar-content {
-            background: #f5f7fa;
-        }
-        /* Change slider color to blue */
-        [data-baseweb="slider"] .css-14g5kgc,
-        [data-baseweb="slider"] .css-1gv0vcd,
-        .stSlider > div > div > div[role="slider"] {
-            background: #1976d2 !important;
-            border-color: #1976d2 !important;
-        }
-        .stSlider .css-1c5b3bq {
-            color: #1976d2 !important;
-        }
-        /* Change checkbox color to blue */
-        .stCheckbox [data-baseweb="checkbox"] > div {
-            border-color: #1976d2 !important;
-        }
-        .stCheckbox [data-baseweb="checkbox"][aria-checked="true"] > div {
-            background-color: #1976d2 !important;
-            border-color: #1976d2 !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    st.markdown("<h1 style='color:#1976d2; font-weight:700; letter-spacing:1px;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
-    st.sidebar.markdown("<h2 style='color:#1976d2;'>Settings</h2>", unsafe_allow_html=True)
-    settings = load_settings()
-    
-    # Settings controls
-    forecast_horizon = st.sidebar.slider(
-        "Forecast Horizon",
-        min_value=1,
-        max_value=52,
-        value=settings['forecast_horizon']
-    )
-    
-    confidence_interval = st.sidebar.slider(
-        "Confidence Interval",
-        min_value=0.5,
-        max_value=0.99,
-        value=settings['confidence_interval'],
-        step=0.01
-    )
-    
-    model_type = st.sidebar.selectbox(
-        "Model Type",
-        options=['auto', 'simple', 'holt', 'holt-winters'],
-        index=['auto', 'simple', 'holt', 'holt-winters'].index(settings['model_type'])
-    )
-    
-    seasonality = st.sidebar.selectbox(
-        "Seasonality",
-        options=['additive', 'multiplicative'],
-        index=['additive', 'multiplicative'].index(settings['seasonality'])
-    )
-    
-    theme = 'plotly_white'
-    
-    show_confidence = st.sidebar.checkbox(
-        "Show Confidence Intervals",
-        value=settings['show_confidence']
-    )
-    
-    show_legend = st.sidebar.checkbox(
-        "Show Legend",
-        value=settings['show_legend']
-    )
-    
-    show_grid = st.sidebar.checkbox(
-        "Show Grid",
-        value=settings['show_grid']
-    )
-    
-    # Save settings
-    new_settings = {
-        'forecast_horizon': forecast_horizon,
-        'confidence_interval': confidence_interval,
-        'model_type': model_type,
-        'seasonality': seasonality,
-        'theme': 'light',
-        'chart_style': settings['chart_style'],
-        'show_confidence': show_confidence,
-        'show_legend': show_legend,
-        'show_grid': show_grid
+# ==== CSS CUSTOM ====
+st.markdown(
+    """
+    <style>
+    html, body, .stApp {
+        background-color: #fff !important;
+        font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
     }
-    save_settings(new_settings)
-    
-    # File upload
-    uploaded_file = st.file_uploader("Upload Excel file", type=['xlsx', 'xls'])
-    
-    if uploaded_file is not None:
-        try:
-            # Read Excel file
-            df = pd.read_excel(uploaded_file)
-            df = process_excel_data(df)
-            
-            # Create forecast
-            forecaster = Forecast(df, 'date', 'value')
-            forecast_results = forecaster.generate_forecast(
-                periods=forecast_horizon,
-                seasonality=seasonality,
-                confidence_level=confidence_interval,
-                model_type=model_type
-            )
-            
-            # Calculate metrics
-            metrics = {
-                'rmse': forecaster.calculate_rmse(),
-                'mae': forecaster.calculate_mae(),
-                'mape': forecaster.calculate_mape()
-            }
-            
-            # Display metrics
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("RMSE", f"{metrics['rmse']:.2f}")
-            with col2:
-                st.metric("MAE", f"{metrics['mae']:.2f}")
-            with col3:
-                st.metric("MAPE", f"{metrics['mape']:.2f}%")
-            
-            # Create plot
-            fig = go.Figure()
-            
-            # Add historical data
-            fig.add_trace(go.Scatter(
-                x=df['date'],
-                y=df['value'],
-                name='Historical',
-                line=dict(color='#1976d2', width=3),
-                marker=dict(color='#1976d2')
-            ))
-            
-            # Add forecast
-            fig.add_trace(go.Scatter(
-                x=forecast_results['date'],
-                y=forecast_results['forecast'],
-                name='Forecast',
-                line=dict(color='#43e97b', width=3, dash='dash'),
-                marker=dict(color='#43e97b')
-            ))
-            
-            # Add confidence intervals
-            if show_confidence:
-                fig.add_trace(go.Scatter(
-                    x=forecast_results['date'],
-                    y=forecast_results['upper_bound'],
-                    fill=None,
-                    mode='lines',
-                    line_color='rgba(255,193,7,0.3)',
-                    name='Upper Bound'
-                ))
-                fig.add_trace(go.Scatter(
-                    x=forecast_results['date'],
-                    y=forecast_results['lower_bound'],
-                    fill='tonexty',
-                    mode='lines',
-                    line_color='rgba(255,193,7,0.3)',
-                    name='Lower Bound'
-                ))
-            
-            # Update layout
-            fig.update_layout(
-                title='<b style="color:#1976d2;">Time Series Forecast</b>',
-                xaxis_title='Date',
-                yaxis_title='Value',
-                showlegend=show_legend,
-                template=theme,
-                plot_bgcolor='#fff',
-                paper_bgcolor='#fff',
-                font=dict(color='#222')
-            )
-            
-            if show_grid:
-                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e0e0e0')
-                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#e0e0e0')
-            
-            # Display plot
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Download button for forecast results
-            csv = forecast_results.to_csv(index=False)
-            st.download_button(
-                label="Download Forecast Results",
-                data=csv,
-                file_name=f'forecast_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
-                mime='text/csv'
-            )
-            
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
-            logger.error(f"Error in main: {str(e)}")
-            logger.error(traceback.format_exc())
+    .main > div {
+        padding-top: 2rem;
+    }
+    .stMetric {
+        background-color: #f8fafc;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(25,118,210,0.07);
+    }
+    .stButton>button, .stDownloadButton>button {
+        background: linear-gradient(90deg, #1976d2 0%, #43e97b 100%);
+        color: #fff;
+        font-weight: 600;
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(25,118,210,0.08);
+    }
+    .stButton>button:hover, .stDownloadButton>button:hover {
+        background: linear-gradient(90deg, #43e97b 0%, #1976d2 100%);
+        color: #fff;
+    }
+    /* Blue sliders */
+    [data-baseweb="slider"] .css-14g5kgc,
+    [data-baseweb="slider"] .css-1gv0vcd,
+    .stSlider > div > div > div[role="slider"] {
+        background: #1976d2 !important;
+        border-color: #1976d2 !important;
+    }
+    .stSlider .css-1c5b3bq {
+        color: #1976d2 !important;
+    }
+    /* Blue checkboxes */
+    .stCheckbox [data-baseweb="checkbox"] > div {
+        border-color: #1976d2 !important;
+    }
+    .stCheckbox [data-baseweb="checkbox"][aria-checked="true"] > div {
+        background-color: #1976d2 !important;
+        border-color: #1976d2 !important;
+    }
+    /* Card style for file uploader and controls */
+    .block-container {
+        max-width: 900px;
+        margin: auto;
+    }
+    .stFileUploader, .stSelectbox, .stSlider, .stButton, .stDownloadButton {
+        margin-bottom: 1.2em;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-if __name__ == "__main__":
-    main()
+# ==== MAIN TITLE ====
+st.markdown(
+    "<h1 style='text-align: center; color:#1976d2; font-weight:700; letter-spacing:1px;'>📊 Time Series Forecasting App</h1>",
+    unsafe_allow_html=True
+)
+
+# ==== FILE UPLOAD ====
+with st.container():
+    uploaded_file = st.file_uploader("Upload your CSV file 👇", type=["csv"])
+    if uploaded_file is not None:
+        data = pd.read_csv(uploaded_file)
+        st.subheader("📄 Uploaded Data")
+        st.dataframe(data, height=250)
+
+        # ==== TIME & VALUE COLUMN ====
+        time_column = st.selectbox("🕒 Select time column", data.columns)
+        value_column = st.selectbox("💹 Select value column", data.columns)
+
+        # ==== FORECAST PERIOD ====
+        forecast_period = st.slider("🔮 Forecast steps", min_value=1, max_value=30, value=7)
+
+        # ==== RUN FORECAST ====
+        if st.button("🚀 Forecast"):
+            try:
+                df = data[[time_column, value_column]].dropna()
+                df[time_column] = pd.to_datetime(df[time_column])
+                df = df.set_index(time_column)
+
+                model = ARIMA(df[value_column], order=(1, 1, 1))
+                model_fit = model.fit()
+                forecast = model_fit.forecast(steps=forecast_period)
+
+                last_date = df.index[-1]
+                future_dates = pd.date_range(start=last_date + datetime.timedelta(days=1), periods=forecast_period)
+
+                forecast_df = pd.DataFrame({value_column: forecast}, index=future_dates)
+
+                # ==== CHART ====
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=df.index, y=df[value_column], mode='lines', name='Actual', line=dict(color='#1976d2', width=3)))
+                fig.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df[value_column], mode='lines+markers', name='Forecast', line=dict(color='#43e97b', width=3, dash='dash')))
+                fig.update_layout(
+                    title="Forecast Chart",
+                    xaxis_title="Time",
+                    yaxis_title="Value",
+                    template="plotly_white",
+                    height=500,
+                    font=dict(family='Segoe UI, Roboto, Arial, sans-serif', color='#222'),
+                    plot_bgcolor='#fff',
+                    paper_bgcolor='#fff',
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                # ==== METRICS ====
+                from sklearn.metrics import mean_squared_error, mean_absolute_error
+                import numpy as np
+                if len(df) > forecast_period:
+                    true_values = df[value_column][-forecast_period:]
+                    pred_values = forecast[:len(true_values)]
+                    rmse = np.sqrt(mean_squared_error(true_values, pred_values))
+                    mae = mean_absolute_error(true_values, pred_values)
+                    mape = np.mean(np.abs((true_values - pred_values) / true_values)) * 100
+                    st.markdown("### 📐 Model Evaluation")
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("RMSE", f"{rmse:.2f}")
+                    col2.metric("MAE", f"{mae:.2f}")
+                    col3.metric("MAPE", f"{mape:.2f}%")
+
+                # ==== EXPORT FORECAST ====
+                forecast_df_reset = forecast_df.reset_index()
+                forecast_df_reset.columns = ['Date', 'Forecast Value']
+                csv = forecast_df_reset.to_csv(index=False).encode('utf-8')
+                st.download_button("⬇️ Download Forecast Results", data=csv, file_name='forecast.csv', mime='text/csv')
+
+            except Exception as e:
+                st.error(f"❌ An error occurred: {e}")
+    else:
+        st.info("⬆️ Please upload a CSV file with time series data to start forecasting.")
