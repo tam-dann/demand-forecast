@@ -5,6 +5,7 @@ import pandas as pd
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.api import SimpleExpSmoothing, Holt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from scipy.stats import norm
 
 class Observation:
     def __init__(self, period, demand):
@@ -373,8 +374,14 @@ class Forecast:
             
             # Generate forecast
             forecast = self.model.forecast(periods)
-            conf_int = self.model.get_prediction(start=len(y), end=len(y)+periods-1).conf_int(alpha=1-confidence_level)
-            
+
+            # Calculate confidence intervals manually for Holt-Winters
+            residuals = y - self.model.fittedvalues
+            std = np.std(residuals)
+            z = norm.ppf(1 - (1 - confidence_level) / 2)
+            lower_bound = forecast - z * std
+            upper_bound = forecast + z * std
+
             # Create forecast dataframe
             last_date = self.df[self.date_col].iloc[-1]
             forecast_dates = pd.date_range(start=last_date, periods=periods+1, freq='M')[1:]
@@ -382,8 +389,8 @@ class Forecast:
             self.forecast_results = pd.DataFrame({
                 'date': forecast_dates,
                 'forecast': forecast,
-                'lower_bound': conf_int[:, 0],
-                'upper_bound': conf_int[:, 1]
+                'lower_bound': lower_bound,
+                'upper_bound': upper_bound
             })
             
             return self.forecast_results
