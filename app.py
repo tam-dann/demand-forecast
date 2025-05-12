@@ -139,7 +139,7 @@ def main():
     st.markdown("<h1 style='color:#1565c0;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
     
     # Sidebar for settings
-    st.sidebar.header("<span style='color:#1565c0;'>Settings</span>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h2 style='color:#1565c0;'>Settings</h2>", unsafe_allow_html=True)
     settings = load_settings()
     
     # Settings controls
