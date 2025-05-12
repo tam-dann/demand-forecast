@@ -89,39 +89,42 @@ def main():
         layout="wide"
     )
     
-    # Custom white background and colorful, simple style
+    # Modern, clean, colorful interface
     st.markdown(
         """
         <style>
-        .stApp {
-            background-color: #fff;
-        }
-        .css-18e3th9 {
-            background-color: #fff;
-        }
-        .stButton>button, .stDownloadButton>button {
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 5px;
-            border: none;
-        }
-        .stButton>button:hover, .stDownloadButton>button:hover {
-            background-color: #388e3c;
-            color: white;
+        html, body, .stApp {
+            background-color: #fff !important;
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
         }
         .stMetric {
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            padding: 8px;
+            background: #f8fafc;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .stButton>button, .stDownloadButton>button {
+            background: linear-gradient(90deg, #1976d2 0%, #43e97b 100%);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5em 1.2em;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(25,118,210,0.08);
+        }
+        .stButton>button:hover, .stDownloadButton>button:hover {
+            background: linear-gradient(90deg, #43e97b 0%, #1976d2 100%);
+            color: #fff;
+        }
+        .sidebar .sidebar-content {
+            background: #f5f7fa;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
-    
-    st.markdown("<h1 style='color:#222;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
-    
-    # Sidebar for settings
+    st.markdown("<h1 style='color:#1976d2; font-weight:700; letter-spacing:1px;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='color:#1976d2;'>Settings</h2>", unsafe_allow_html=True)
     settings = load_settings()
     
@@ -235,8 +238,8 @@ def main():
                 x=forecast_results['date'],
                 y=forecast_results['forecast'],
                 name='Forecast',
-                line=dict(color='#e65100', width=3, dash='dash'),
-                marker=dict(color='#e65100')
+                line=dict(color='#43e97b', width=3, dash='dash'),
+                marker=dict(color='#43e97b')
             ))
             
             # Add confidence intervals
@@ -246,7 +249,7 @@ def main():
                     y=forecast_results['upper_bound'],
                     fill=None,
                     mode='lines',
-                    line_color='rgba(76,175,80,0.3)',
+                    line_color='rgba(255,193,7,0.3)',
                     name='Upper Bound'
                 ))
                 fig.add_trace(go.Scatter(
@@ -254,13 +257,13 @@ def main():
                     y=forecast_results['lower_bound'],
                     fill='tonexty',
                     mode='lines',
-                    line_color='rgba(76,175,80,0.3)',
+                    line_color='rgba(255,193,7,0.3)',
                     name='Lower Bound'
                 ))
             
             # Update layout
             fig.update_layout(
-                title='<b style="color:#222;">Time Series Forecast</b>',
+                title='<b style="color:#1976d2;">Time Series Forecast</b>',
                 xaxis_title='Date',
                 yaxis_title='Value',
                 showlegend=show_legend,
