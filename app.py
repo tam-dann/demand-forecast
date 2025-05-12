@@ -120,6 +120,24 @@ def main():
         .sidebar .sidebar-content {
             background: #f5f7fa;
         }
+        /* Change slider color to blue */
+        [data-baseweb="slider"] .css-14g5kgc,
+        [data-baseweb="slider"] .css-1gv0vcd,
+        .stSlider > div > div > div[role="slider"] {
+            background: #1976d2 !important;
+            border-color: #1976d2 !important;
+        }
+        .stSlider .css-1c5b3bq {
+            color: #1976d2 !important;
+        }
+        /* Change checkbox color to blue */
+        .stCheckbox [data-baseweb="checkbox"] > div {
+            border-color: #1976d2 !important;
+        }
+        .stCheckbox [data-baseweb="checkbox"][aria-checked="true"] > div {
+            background-color: #1976d2 !important;
+            border-color: #1976d2 !important;
+        }
         </style>
         """,
         unsafe_allow_html=True
