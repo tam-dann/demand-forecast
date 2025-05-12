@@ -89,45 +89,28 @@ def main():
         layout="wide"
     )
     
-    # Custom blue theme using markdown and CSS
+    # Custom white background and colorful, simple style
     st.markdown(
         """
         <style>
         .stApp {
-            background-color: #eaf1fb;
+            background-color: #fff;
         }
         .css-18e3th9 {
-            background-color: #eaf1fb;
+            background-color: #fff;
         }
-        .css-1d391kg, .css-1v0mbdj, .css-1cpxqw2 {
-            background-color: #1565c0 !important;
-            color: white !important;
-        }
-        .st-bb, .st-c6, .st-cg, .st-cj, .st-cl, .st-cm, .st-cn, .st-co, .st-cp, .st-cq, .st-cr, .st-cs, .st-ct, .st-cu, .st-cv, .st-cw, .st-cx, .st-cy, .st-cz {
-            color: #1565c0 !important;
-        }
-        .stButton>button {
-            background-color: #1976d2;
+        .stButton>button, .stDownloadButton>button {
+            background-color: #4CAF50;
             color: white;
             border-radius: 5px;
             border: none;
         }
-        .stButton>button:hover {
-            background-color: #1565c0;
-            color: white;
-        }
-        .stDownloadButton>button {
-            background-color: #1976d2;
-            color: white;
-            border-radius: 5px;
-            border: none;
-        }
-        .stDownloadButton>button:hover {
-            background-color: #1565c0;
+        .stButton>button:hover, .stDownloadButton>button:hover {
+            background-color: #388e3c;
             color: white;
         }
         .stMetric {
-            background-color: #e3f2fd;
+            background-color: #f5f5f5;
             border-radius: 8px;
             padding: 8px;
         }
@@ -136,10 +119,10 @@ def main():
         unsafe_allow_html=True
     )
     
-    st.markdown("<h1 style='color:#1565c0;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#222;'>Time Series Forecasting</h1>", unsafe_allow_html=True)
     
     # Sidebar for settings
-    st.sidebar.markdown("<h2 style='color:#1565c0;'>Settings</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h2 style='color:#1976d2;'>Settings</h2>", unsafe_allow_html=True)
     settings = load_settings()
     
     # Settings controls
@@ -170,7 +153,7 @@ def main():
         index=['additive', 'multiplicative'].index(settings['seasonality'])
     )
     
-    theme = 'plotly_white'  # Use white for best blue contrast
+    theme = 'plotly_white'
     
     show_confidence = st.sidebar.checkbox(
         "Show Confidence Intervals",
@@ -243,7 +226,8 @@ def main():
                 x=df['date'],
                 y=df['value'],
                 name='Historical',
-                line=dict(color='#1976d2')
+                line=dict(color='#1976d2', width=3),
+                marker=dict(color='#1976d2')
             ))
             
             # Add forecast
@@ -251,7 +235,8 @@ def main():
                 x=forecast_results['date'],
                 y=forecast_results['forecast'],
                 name='Forecast',
-                line=dict(color='#42a5f5')
+                line=dict(color='#e65100', width=3, dash='dash'),
+                marker=dict(color='#e65100')
             ))
             
             # Add confidence intervals
@@ -261,7 +246,7 @@ def main():
                     y=forecast_results['upper_bound'],
                     fill=None,
                     mode='lines',
-                    line_color='rgba(33,150,243,0.2)',
+                    line_color='rgba(76,175,80,0.3)',
                     name='Upper Bound'
                 ))
                 fig.add_trace(go.Scatter(
@@ -269,25 +254,25 @@ def main():
                     y=forecast_results['lower_bound'],
                     fill='tonexty',
                     mode='lines',
-                    line_color='rgba(33,150,243,0.2)',
+                    line_color='rgba(76,175,80,0.3)',
                     name='Lower Bound'
                 ))
             
             # Update layout
             fig.update_layout(
-                title='<b style="color:#1565c0;">Time Series Forecast</b>',
+                title='<b style="color:#222;">Time Series Forecast</b>',
                 xaxis_title='Date',
                 yaxis_title='Value',
                 showlegend=show_legend,
                 template=theme,
-                plot_bgcolor='#eaf1fb',
-                paper_bgcolor='#eaf1fb',
-                font=dict(color='#1565c0')
+                plot_bgcolor='#fff',
+                paper_bgcolor='#fff',
+                font=dict(color='#222')
             )
             
             if show_grid:
-                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#bbdefb')
-                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#bbdefb')
+                fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#e0e0e0')
+                fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#e0e0e0')
             
             # Display plot
             st.plotly_chart(fig, use_container_width=True)
